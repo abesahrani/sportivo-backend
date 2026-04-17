@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MANAGER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  password_hash String
+  phone         String?
+  avatar        String?
+  refreshToken  String?
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookings      Booking[]
+  reviews       Review[]
+  facilities    Facility[] @relation("ManagerFacilities")
+  participations BookingParticipant[]
+  posts         Post[]
+  postLikes     PostLike[]
+  comments      Comment[]
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id])
+  image_url   String
+  caption     String?
+  likes       Int      @default(0) // Fast counter
+  
+  createdAt   DateTime @default(now())
+  
+  postLikes   PostLike[]
+  comments    Comment[]
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  post_id   String
+  post      Post     @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  user_id   String
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([post_id, user_id]) // User can only like a post once
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  text      String
+  post_id   String
+  post      Post     @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  user_id   String
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+}
+
+model Facility {
+  id              String    @id @default(uuid())
+  name            String
+  description     String
+  address         String
+  city            String
+  sport_type      String
+  price_per_hour  Float
+  images          String[]
+  operating_hours Json      // Example: { "monday": { "open": "08:00", "close": "22:00" }, ... }
+  
+  manager_id      String
+  manager         User      @relation("ManagerFacilities", fields: [manager_id], references: [id])
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  bookings        Booking[]
+  reviews         Review[]
+}
+
+model Booking {
+  id              String         @id @default(uuid())
+  user_id         String
+  user            User           @relation(fields: [user_id], references: [id])
+  facility_id     String
+  facility        Facility       @relation(fields: [facility_id], references: [id])
+  
+  start_time      DateTime
+  end_time        DateTime
+  
+  status          BookingStatus  @default(PENDING)
+  payment_status  PaymentStatus  @default(UNPAID)
+  total_price     Float
+  
+  check_in_status Boolean        @default(false)
+  check_in_time   DateTime?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  participants    BookingParticipant[]
+}
+
+model BookingParticipant {
+  id          String   @id @default(uuid())
+  booking_id  String
+  booking     Booking  @relation(fields: [booking_id], references: [id])
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id])
+  status      BookingStatus @default(PENDING) // PENDING (invited), CONFIRMED (accepted)
+  
+  createdAt   DateTime @default(now())
+
+  @@unique([booking_id, user_id])
+}
+
+model Review {
+  id          String    @id @default(uuid())
+  user_id     String
+  user        User      @relation(fields: [user_id], references: [id])
+  facility_id String
+  facility    Facility  @relation(fields: [facility_id], references: [id])
+  
+  rating      Int       // 1 to 5
+  comment     String?
+  
+  createdAt   DateTime  @default(now())
+}
