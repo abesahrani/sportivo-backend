@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: sportivo-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        sync: false # User must provide this in the Render dashboard
+      - key: JWT_SECRET
+        generateValue: true # Render will automatically generate a secure random string
+      - key: PORT
+        value: 10000
