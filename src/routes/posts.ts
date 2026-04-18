@@ -7,16 +7,8 @@ import { authenticateToken } from '../middleware/authMiddleware';
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Configure Multer for local storage (Temporary MVP solution before cloud migration)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Use memory storage for Vercel serverless compatibility
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // GET all community posts (Requires auth to check if user liked it)
@@ -62,9 +54,9 @@ router.post('/', authenticateToken, upload.single('image'), async (req: any, res
       return res.status(400).json({ error: 'Image is required' });
     }
 
-    // Since we are saving locally for the MVP, the URL is just the server path
-    // e.g. http://192.168.1.6:5000/uploads/filename.jpg
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // Convert file buffer to Base64 string for database storage (Vercel serverless friendly MVP solution)
+    const base64String = req.file.buffer.toString('base64');
+    const imageUrl = `data:${req.file.mimetype};base64,${base64String}`;
 
     const newPost = await prisma.post.create({
       data: {
