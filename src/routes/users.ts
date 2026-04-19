@@ -7,16 +7,8 @@ import { authenticateToken } from '../middleware/authMiddleware';
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Configure Multer for local storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Configure Multer for memory storage (Serverless safe)
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // GET current user profile
@@ -44,7 +36,8 @@ router.post('/avatar', authenticateToken, upload.single('avatar'), async (req: a
       return res.status(400).json({ error: 'Image is required' });
     }
 
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const base64String = req.file.buffer.toString('base64');
+    const imageUrl = `data:${req.file.mimetype};base64,${base64String}`;
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
