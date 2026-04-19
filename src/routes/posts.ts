@@ -30,7 +30,7 @@ router.get('/', authenticateToken, async (req: any, res: any) => {
       id: post.id,
       user_id: post.user.id,
       user: post.user.name,
-      avatar: post.user.avatar || 'https://i.pravatar.cc/100', // fallback
+      avatar: post.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.user.name)}&background=random`, // fallback
       image: post.image_url,
       caption: post.caption,
       likes: post.likes,
@@ -153,7 +153,7 @@ router.get('/:id/comments', authenticateToken, async (req: any, res: any) => {
       id: c.id,
       text: c.text,
       user: c.user.name,
-      avatar: c.user.avatar || 'https://i.pravatar.cc/100',
+      avatar: c.user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.user.name)}&background=random`,
       createdAt: c.createdAt
     }));
 
