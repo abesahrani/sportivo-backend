@@ -23,6 +23,20 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// GET facilities owned by the current manager
+router.get('/manager', authenticateToken, requireRole(['MANAGER', 'ADMIN']), async (req: any, res: Response) => {
+  try {
+    const facilities = await prisma.facility.findMany({
+      where: { manager_id: req.user.id },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(facilities);
+  } catch (error) {
+    console.error('Error fetching manager facilities:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // GET a single facility by ID
 router.get('/:id', async (req: Request, res: Response) => {
   try {

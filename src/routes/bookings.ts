@@ -1,8 +1,61 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../prismaClient';
-import { authenticateToken } from '../middleware/authMiddleware';
+import { authenticateToken, requireRole } from '../middleware/authMiddleware';
 
 const router = Router();
+
+// GET manager's incoming bookings
+router.get('/manager', authenticateToken, requireRole(['MANAGER', 'ADMIN']), async (req: any, res: Response) => {
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: {
+        facility: {
+          manager_id: req.user.id
+        }
+      },
+      include: {
+        facility: { select: { name: true, sport_type: true } },
+        user: { select: { name: true, email: true, avatar: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(bookings);
+  } catch (error) {
+    console.error('Error fetching manager bookings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT update booking status (accept/reject)
+router.put('/:id/status', authenticateToken, requireRole(['MANAGER', 'ADMIN']), async (req: any, res: Response) => {
+  try {
+    const { status } = req.body;
+    const bookingId = req.params.id;
+
+    if (!['CONFIRMED', 'CANCELLED'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status update' });
+    }
+
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      include: { facility: true }
+    });
+
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.facility.manager_id !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
+
+    const updatedBooking = await prisma.booking.update({
+      where: { id: bookingId },
+      data: { status }
+    });
+
+    res.json(updatedBooking);
+  } catch (error) {
+    console.error('Error updating booking status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // GET user's bookings (for Activity Tracker)
 router.get('/', authenticateToken, async (req: any, res: Response) => {
