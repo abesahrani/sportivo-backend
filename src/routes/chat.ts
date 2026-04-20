@@ -117,11 +117,39 @@ router.post('/messages', authenticateToken, async (req: any, res: any) => {
       }
     });
 
-    // Update conversation timestamp
-    await prisma.conversation.update({
+    // Update conversation timestamp and get receiver's push token
+    const conversation = await prisma.conversation.update({
       where: { id: conversation_id },
-      data: { updatedAt: new Date() }
+      data: { updatedAt: new Date() },
+      include: {
+        user1: { select: { id: true, expoPushToken: true } },
+        user2: { select: { id: true, expoPushToken: true } }
+      }
     });
+
+    const receiver = conversation.user1.id === sender_id ? conversation.user2 : conversation.user1;
+
+    // Send Push Notification
+    if (receiver.expoPushToken) {
+      try {
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: receiver.expoPushToken,
+            sound: 'default',
+            title: `New message from ${message.sender.name}`,
+            body: text,
+            data: { conversationId: conversation_id },
+          }),
+        });
+      } catch (pushError) {
+        console.error('Push notification failed:', pushError);
+      }
+    }
 
     res.status(201).json(message);
   } catch (error) {

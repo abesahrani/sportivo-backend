@@ -52,4 +52,24 @@ router.post('/avatar', authenticateToken, upload.single('avatar'), async (req: a
   }
 });
 
+// PUT update push token
+router.put('/push-token', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: 'Push token is required' });
+    }
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { expoPushToken: token }
+    });
+
+    res.json({ message: 'Push token updated successfully' });
+  } catch (error) {
+    console.error('Failed to update push token', error);
+    res.status(500).json({ error: 'Failed to update push token' });
+  }
+});
+
 export default router;
