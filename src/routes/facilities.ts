@@ -1,8 +1,11 @@
 import { Router, Request, Response } from 'express';
+import multer from 'multer';
 import prisma from '../prismaClient';
 import { authenticateToken, requireRole } from '../middleware/authMiddleware';
 
 const router = Router();
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // GET all facilities (with optional filtering)
 router.get('/', async (req: Request, res: Response) => {
@@ -64,10 +67,24 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // POST create a new facility (MANAGER or ADMIN only)
-router.post('/', authenticateToken, requireRole(['MANAGER', 'ADMIN']), async (req: any, res: Response) => {
+router.post('/', authenticateToken, requireRole(['MANAGER', 'ADMIN']), upload.array('images', 5), async (req: any, res: Response) => {
   try {
-    const { name, description, address, city, sport_type, price_per_hour, images, operating_hours } = req.body;
+    const { name, description, address, city, sport_type, price_per_hour, operating_hours } = req.body;
     
+    // Process uploaded files to base64
+    const imageUrls: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        const base64String = file.buffer.toString('base64');
+        const imageUrl = `data:${file.mimetype};base64,${base64String}`;
+        imageUrls.push(imageUrl);
+      }
+    }
+
+    // Parse integers and JSON from FormData strings
+    const parsedPrice = parseInt(price_per_hour, 10);
+    const parsedHours = typeof operating_hours === 'string' ? JSON.parse(operating_hours) : operating_hours;
+
     const newFacility = await prisma.facility.create({
       data: {
         name,
@@ -75,9 +92,9 @@ router.post('/', authenticateToken, requireRole(['MANAGER', 'ADMIN']), async (re
         address,
         city,
         sport_type,
-        price_per_hour,
-        images,
-        operating_hours,
+        price_per_hour: parsedPrice,
+        images: imageUrls,
+        operating_hours: parsedHours,
         manager_id: req.user.id
       }
     });
