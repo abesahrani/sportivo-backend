@@ -148,6 +148,14 @@ router.post('/:id/cancel', authenticateToken, async (req: any, res: Response) =>
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
     if (booking.user_id !== req.user.id) return res.status(403).json({ error: 'Unauthorized' });
 
+    const now = new Date();
+    const timeUntilBooking = booking.start_time.getTime() - now.getTime();
+    const minutesUntilBooking = timeUntilBooking / (1000 * 60);
+
+    if (minutesUntilBooking < 30) {
+      return res.status(400).json({ error: 'Cannot cancel a booking within 30 minutes of its start time.' });
+    }
+
     const updatedBooking = await prisma.booking.update({
       where: { id: req.params.id },
       data: { status: 'CANCELLED' }
