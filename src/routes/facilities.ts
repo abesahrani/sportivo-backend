@@ -29,6 +29,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     const facility = await prisma.facility.findUnique({
       where: { id: req.params.id },
       include: {
+        manager: { select: { id: true, name: true, avatar: true } },
         reviews: {
           include: {
             user: { select: { id: true, name: true } }

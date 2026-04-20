@@ -31,6 +31,8 @@ async function main() {
       city: 'Jakarta Pusat',
       sport_type: 'Futsal',
       price_per_hour: 250000,
+      latitude: -6.2183,
+      longitude: 106.8020,
       images: ['https://example.com/gbk-futsal.jpg'],
       operating_hours: {
         monday: { open: '08:00', close: '23:00' },
@@ -50,6 +52,8 @@ async function main() {
       city: 'Jakarta Selatan',
       sport_type: 'Badminton',
       price_per_hour: 75000,
+      latitude: -6.2891,
+      longitude: 106.8000,
       images: ['https://example.com/cilandak-badminton.jpg'],
       operating_hours: {
         monday: { open: '07:00', close: '22:00' },
@@ -69,6 +73,8 @@ async function main() {
       city: 'Depok',
       sport_type: 'Basketball',
       price_per_hour: 150000,
+      latitude: -6.3814,
+      longitude: 106.8322,
       images: ['https://example.com/depok-basketball.jpg'],
       operating_hours: {
         monday: { open: '08:00', close: '20:00' },

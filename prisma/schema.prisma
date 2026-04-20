@@ -44,6 +44,10 @@ model User {
   posts         Post[]
   postLikes     PostLike[]
   comments      Comment[]
+  
+  conversations1 Conversation[] @relation("User1Conversations")
+  conversations2 Conversation[] @relation("User2Conversations")
+  messages      Message[]
 }
 
 model Post {
@@ -91,6 +95,8 @@ model Facility {
   city            String
   sport_type      String
   price_per_hour  Float
+  latitude        Float?
+  longitude       Float?
   images          String[]
   operating_hours Json      // Example: { "monday": { "open": "08:00", "close": "22:00" }, ... }
   
@@ -150,5 +156,31 @@ model Review {
   rating      Int       // 1 to 5
   comment     String?
   
+}
+
+model Conversation {
+  id          String    @id @default(uuid())
+  user1_id    String
+  user1       User      @relation("User1Conversations", fields: [user1_id], references: [id])
+  user2_id    String
+  user2       User      @relation("User2Conversations", fields: [user2_id], references: [id])
+  
+  messages    Message[]
+  
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([user1_id, user2_id]) // Ensure only one conversation exists between two specific users
+}
+
+model Message {
+  id              String       @id @default(uuid())
+  conversation_id String
+  conversation    Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+  sender_id       String
+  sender          User         @relation(fields: [sender_id], references: [id])
+  text            String
+  isRead          Boolean      @default(false)
+  
+  createdAt       DateTime     @default(now())
 }
